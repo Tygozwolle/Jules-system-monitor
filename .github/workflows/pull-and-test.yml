@@ -46,6 +46,10 @@ jobs:
       matrix:
         tag: ${{ fromJson(needs.get_tags.outputs.tags) }}
     steps:
+      - name: Lowercase repository name
+        id: lowercase-repo
+        run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Sanitize tag for container name
         id: sanitize
         run: |
@@ -61,11 +65,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+        run: docker pull ghcr.io/${{ steps.lowercase-repo.outputs.name }}:${{ matrix.tag }}
 
       - name: Run container and perform smoke test
         run: |
-          docker run -d --name ${{ steps.sanitize.outputs.container_name }} ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+          docker run -d --name ${{ steps.sanitize.outputs.container_name }} ghcr.io/${{ steps.lowercase-repo.outputs.name }}:${{ matrix.tag }}
           sleep 5
           if [ "$(docker ps -q -f name=${{ steps.sanitize.outputs.container_name }})" = "" ]; then
             echo "Container failed to start"
