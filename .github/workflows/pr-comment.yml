@@ -39,9 +39,11 @@ jobs:
 
       - name: Post SBOM as PR comment
         uses: actions/github-script@v7
+        env:
+          SBOM_CONTENT: ${{ steps.sbom.outputs.sbom_content }}
         with:
           script: |
-            const sbomContent = `${{ steps.sbom.outputs.sbom_content }}`;
+            const sbomContent = process.env.SBOM_CONTENT;
             const commentBody = `
             <details>
             <summary>SBOM Results</summary>
