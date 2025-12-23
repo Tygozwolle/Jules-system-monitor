@@ -1,0 +1,30 @@
+name: Cleanup Docker Images
+
+on:
+  delete:
+
+jobs:
+  cleanup:
+    name: Delete Docker Image for Deleted Branch
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Get package name
+        id: package
+        run: echo "name=${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
+
+      - name: Sanitize branch name
+        id: sanitize
+        run: |
+          sanitized_branch=$(echo "${{ github.event.ref }}" | sed 's/\//-/g')
+          echo "tag=${sanitized_branch}" >> $GITHUB_OUTPUT
+
+      - name: Delete package versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ steps.package.outputs.name }}
+          package-type: 'container'
+          version-pattern: ${{ steps.sanitize.outputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
