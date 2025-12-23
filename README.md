@@ -4,6 +4,7 @@ A lightweight, Dockerized system monitor that publishes system performance metri
 
 **Repository:** [Tygozwolle/Jules-system-monitor](https://github.com/Tygozwolle/Jules-system-monitor)
 
+
 ## Features
 
 *   **Real-time Monitoring:**
@@ -21,10 +22,12 @@ A lightweight, Dockerized system monitor that publishes system performance metri
     *   **Intel:** GPU Frequency (requires mapped `/sys/class/drm`).
 *   **Home Assistant Integration:** Fully automated MQTT Discovery.
 
+
 ## Prerequisites
 
 *   Docker
 *   MQTT Broker (e.g., Mosquitto, EMQX)
+
 
 ## Quick Start (Docker)
 
@@ -45,6 +48,7 @@ docker run -d \
 
 *Note: `--net=host` is recommended for easiest network discovery, but not strictly required if the MQTT broker is reachable. `--privileged` and `-v /sys:/sys:ro` are **required** for reading hardware sensors (Power, GPU).*
 
+
 ## Configuration (Environment Variables)
 
 | Variable | Default | Description |
@@ -56,21 +60,31 @@ docker run -d \
 | `UPDATE_INTERVAL`| `10` | Time in seconds between updates. |
 | `DEVICE_NAME` | Hostname | Name of the device as it will appear in Home Assistant. |
 
+
 ## GPU Support Details
 
+
 ### NVIDIA
+
 Requires the **NVIDIA Container Toolkit** installed on the host. Run the container with `--gpus all`.
 
+
 ### AMD / Intel
+
 Requires mapping the system directory: `-v /sys:/sys:ro`. The container monitors `/sys/class/drm` and `/sys/class/hwmon` to find stats.
+
 
 ## Development
 
+
 ### Running Locally
+
 1. Install dependencies: `pip install -r system_monitor/requirements.txt`
 2. Run: `python system_monitor/main.py`
 
+
 ### Testing
+
 Run the test suite:
 ```bash
 python3 -m pytest tests/test_dry_run.py
