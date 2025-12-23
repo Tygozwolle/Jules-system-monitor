@@ -30,7 +30,9 @@ jobs:
           if [ -z "$tags" ]; then
             tags="[]"
           fi
-          echo "tags=${tags}" >> $GITHUB_OUTPUT
+          cat <<EOF >> $GITHUB_OUTPUT
+          tags=$tags
+          EOF
 
   smoke_test:
     needs: get_tags
