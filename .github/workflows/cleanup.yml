@@ -30,6 +30,7 @@ jobs:
 
       - name: Delete package versions
         uses: actions/delete-package-versions@v5
+        continue-on-error: true
         with:
           package-name: ${{ steps.package.outputs.name }}
           package-type: 'container'
