@@ -29,6 +29,7 @@ jobs:
           load: true
           sbom: true
           outputs: type=local,dest=./out
+          platforms: linux/amd64
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
