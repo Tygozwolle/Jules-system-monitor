@@ -2,8 +2,6 @@ name: Pull and Test Container
 
 on:
   push:
-    branches:
-      - main
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -21,7 +19,7 @@ jobs:
     steps:
       - name: Get container package name
         id: get-package-name
-        run: echo "package_name=$(echo '${{ github.repository }}' | awk -F'/' '{print $2}')" >> $GITHUB_OUTPUT
+        run: echo "package_name=$(echo '${{ github.repository }}' | awk -F'/' '{print $2}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Get container tags
         id: get-tags
@@ -29,10 +27,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tags=$(gh api "repos/${{ github.repository }}/packages/container/${{ steps.get-package-name.outputs.package_name }}/versions" -q '.[].metadata.container.tags | select(. != null) | flatten | unique | tojson')
+          if [ -z "$tags" ]; then
+            tags="[]"
+          fi
           echo "tags=${tags}" >> $GITHUB_OUTPUT
 
   smoke_test:
     needs: get_tags
+    if: needs.get_tags.outputs.tags != '[]'
     name: Smoke Test Container
     runs-on: ubuntu-latest
     strategy:
@@ -46,7 +48,7 @@ jobs:
         run: |
           # Sanitize the tag to be a valid container name
           sanitized_tag=$(echo "${{ matrix.tag }}" | sed 's/[^a-zA-Z0-9]/-/g')
-          echo "container_name=system-monitor-${sanitized_tag}" >> $GITHUB_OUTPUT
+          echo "container_name=system-monitor-test-${sanitized_tag}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
