@@ -76,6 +76,7 @@ jobs:
             docker logs ${{ steps.sanitize.outputs.container_name }}
             exit 1
           fi
+          docker exec ${{ steps.sanitize.outputs.container_name }} pytest /app/tests/test_dry_run.py
 
       - name: Cleanup container
         if: always()

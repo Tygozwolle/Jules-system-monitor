@@ -11,8 +11,10 @@ WORKDIR /app
 
 COPY system_monitor/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir pytest
 
 COPY system_monitor/ .
+COPY tests/ /app/tests/
 
 # Privileged mode is often required for hardware access, 
 # but that is a runtime flag (--privileged).
