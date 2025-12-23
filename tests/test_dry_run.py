@@ -156,6 +156,7 @@ class TestSystemMonitor(unittest.TestCase):
         self.assertAlmostEqual(stats['cpu_power_package-0_watts'], 10.0, delta=2.0)
 
 
+
 class TestMQTTClient(unittest.TestCase):
     def test_discovery_payload(self):
         client = MQTTClient("localhost", 1883, None, None, "Test Device")
