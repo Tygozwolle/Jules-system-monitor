@@ -3,8 +3,8 @@ FROM python:3.9-slim
 # Install system dependencies
 # gcc and python3-dev are often required for psutil compilation if no wheel is available
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc=4:10.2.1-1 \
-    python3-dev=3.9.2-3 \
+    gcc-10=10.2.1-6 \
+    python3.9-dev=3.9.2-1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
