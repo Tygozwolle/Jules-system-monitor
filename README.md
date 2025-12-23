@@ -7,18 +7,18 @@ A lightweight, Dockerized system monitor that publishes system performance metri
 ## Features
 
 *   **Real-time Monitoring:**
-    *   **CPU:** Usage (Total & Per Core), Frequency, Load Average, Temperature.
-    *   **Memory:** RAM Usage (Total, Used, Free, %), Swap Usage.
-    *   **Disk:** Root Partition Usage.
-    *   **Network:** Bytes Sent/Received.
-    *   **System:** Uptime, Boot Time.
+  *   **CPU:** Usage (Total & Per Core), Frequency, Load Average, Temperature.
+  *   **Memory:** RAM Usage (Total, Used, Free, %), Swap Usage.
+  *   **Disk:** Root Partition Usage.
+  *   **Network:** Bytes Sent/Received.
+  *   **System:** Uptime, Boot Time.
 *   **Power Monitoring:**
-    *   **CPU Power (x86):** Real-time power consumption in Watts (via RAPL).
-    *   **GPU Power:** Supported for NVIDIA (NVML) and AMD (hwmon).
+  *   **CPU Power (x86):** Real-time power consumption in Watts (via RAPL).
+  *   **GPU Power:** Supported for NVIDIA (NVML) and AMD (hwmon).
 *   **GPU Support:**
-    *   **NVIDIA:** Usage, Memory, Temp, Power (requires `--gpus all` or `nvidia-container-runtime`).
-    *   **AMD:** Usage, Temp, Power (requires mapped `/sys/class/drm` and `/sys/class/hwmon`).
-    *   **Intel:** GPU Frequency (requires mapped `/sys/class/drm`).
+  *   **NVIDIA:** Usage, Memory, Temp, Power (requires `--gpus all` or `nvidia-container-runtime`).
+  *   **AMD:** Usage, Temp, Power (requires mapped `/sys/class/drm` and `/sys/class/hwmon`).
+  *   **Intel:** GPU Frequency (requires mapped `/sys/class/drm`).
 *   **Home Assistant Integration:** Fully automated MQTT Discovery.
 
 ## Prerequisites
