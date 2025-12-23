@@ -26,7 +26,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tags=$(gh api "repos/${{ github.repository }}/packages/container/${{ steps.get-package-name.outputs.package_name }}/versions" -q '.[].metadata.container.tags | select(. != null) | flatten | unique | tojson')
+          tags=$(gh api "/users/${{ github.repository_owner }}/packages/container/${{ steps.get-package-name.outputs.package_name }}/versions" -q '.[].metadata.container.tags | select(. != null) | flatten | unique | tojson')
           if [ -z "$tags" ]; then
             tags="[]"
           fi
