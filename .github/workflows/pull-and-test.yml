@@ -1,6 +1,9 @@
 name: Pull and Test Container
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -34,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 20
       matrix:
         tag: ${{ fromJson(needs.get_tags.outputs.tags) }}
     steps:
