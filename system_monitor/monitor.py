@@ -225,7 +225,6 @@ class SystemMonitor:
                                 
                                 # Power
                                 # Try power1_average first, then power1_input
-                                power_found = False
                                 for p_file in ['power1_average', 'power1_input']:
                                     p_path = os.path.join(hwmon, p_file)
                                     if os.path.exists(p_path):
@@ -233,7 +232,6 @@ class SystemMonitor:
                                             # Microwatts
                                             val = int(f.read().strip())
                                             data[f'gpu_amd_{card_name}_power_watts'] = val / 1_000_000.0
-                                            power_found = True
                                             break
 
             except Exception:
