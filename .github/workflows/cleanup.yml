@@ -1,0 +1,38 @@
+name: Cleanup Docker Images
+
+on:
+  delete:
+
+jobs:
+  cleanup:
+    name: Delete Docker Image for Deleted Branch
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Get package name
+        id: package
+        run: echo "name=${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        env:
+          GITHUB_REF: refs/heads/${{ github.event.ref }}
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: type=ref,event=branch
+
+      - name: Parse tag from metadata
+        id: tag
+        run: echo "value=$(echo '${{ steps.meta.outputs.tags }}' | sed 's/.*://')" >> $GITHUB_OUTPUT
+
+      - name: Delete package versions
+        uses: actions/delete-package-versions@v5
+        continue-on-error: true
+        with:
+          package-name: ${{ steps.package.outputs.name }}
+          package-type: 'container'
+          version-pattern: ${{ steps.tag.outputs.value }}
+          token: ${{ secrets.GITHUB_TOKEN }}
