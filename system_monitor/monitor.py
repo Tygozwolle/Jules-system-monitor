@@ -1,5 +1,6 @@
 import platform
 import psutil
+import logging
 import os
 import glob
 import time
@@ -21,9 +22,9 @@ class SystemMonitor:
             self.nvml_initialized = True
             self.pynvml = pynvml
         except ImportError:
-            pass
-        except Exception:
-            pass
+            logging.info("pynvml not found, NVIDIA GPU stats will not be available.")
+        except Exception as e:
+            logging.error(f"An error occurred during pynvml initialization: {e}")
 
     def get_stats(self):
         stats = {}
@@ -59,8 +60,8 @@ class SystemMonitor:
             freq = psutil.cpu_freq()
             if freq:
                 data['cpu_freq_current'] = freq.current
-        except Exception:
-            pass
+        except Exception as e:
+            logging.debug(f"Could not get CPU frequency: {e}")
 
         # Load
         if hasattr(os, 'getloadavg'):
@@ -108,8 +109,8 @@ class SystemMonitor:
                             # Update state
                             self.last_cpu_energy[pkg] = energy_uj
 
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logging.debug(f"Could not read CPU power for {name}: {e}")
         
         return data
 
@@ -130,8 +131,8 @@ class SystemMonitor:
             usage = psutil.disk_usage('/')
             data['disk_root_usage_percent'] = usage.percent
             data['disk_root_free_gb'] = usage.free // 1024 // 1024 // 1024
-        except Exception:
-            pass
+        except Exception as e:
+            logging.debug(f"Could not get disk usage: {e}")
         return data
 
     def _get_network_stats(self):
@@ -168,14 +169,14 @@ class SystemMonitor:
                     try:
                         power = self.pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0 # mW to W
                         data[f'gpu_nvidia_{i}_power_watts'] = power
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logging.debug(f"Could not get NVIDIA GPU power for {name}: {e}")
                     
                     data[f'gpu_nvidia_{i}_usage_percent'] = util.gpu
                     data[f'gpu_nvidia_{i}_memory_percent'] = (mem.used / mem.total) * 100
                     data[f'gpu_nvidia_{i}_temp_c'] = temp
-            except Exception:
-                pass
+            except Exception as e:
+                logging.error(f"An error occurred while getting NVIDIA GPU stats: {e}")
 
         # Intel (sysfs)
         # Look for /sys/class/drm/card*/gt_act_freq_mhz
@@ -194,8 +195,8 @@ class SystemMonitor:
                             with open(freq_path, 'r') as f:
                                 data[f'gpu_intel_{card_name}_freq_mhz'] = int(f.read().strip())
                         # Attempt to find power/energy if available (often in rapl but specific)
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(f"Could not get Intel GPU stats for {path}: {e}")
 
         # AMD (sysfs)
         # Look for /sys/class/drm/card*/device/gpu_busy_percent
@@ -234,7 +235,7 @@ class SystemMonitor:
                                             data[f'gpu_amd_{card_name}_power_watts'] = val / 1_000_000.0
                                             break
 
-            except Exception:
-                pass
+            except Exception as e:
+                logging.debug(f"Could not get AMD GPU stats for {path}: {e}")
 
         return data
