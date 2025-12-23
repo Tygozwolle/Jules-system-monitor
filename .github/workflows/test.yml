@@ -1,7 +1,6 @@
 name: Test System Monitor
 
 on:
-  push:
   pull_request:
     branches: [ main, master ]
   workflow_call:
