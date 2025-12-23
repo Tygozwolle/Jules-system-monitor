@@ -1,0 +1,71 @@
+name: Pull and Test Container
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  get_tags:
+    name: Get all container tags
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.get-tags.outputs.tags }}
+    steps:
+      - name: Get container package name
+        id: get-package-name
+        run: echo "package_name=$(echo '${{ github.repository }}' | awk -F'/' '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Get container tags
+        id: get-tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tags=$(gh api "repos/${{ github.repository }}/packages/container/${{ steps.get-package-name.outputs.package_name }}/versions" -q '.[].metadata.container.tags | select(. != null) | flatten | unique | tojson')
+          echo "tags=${tags}" >> $GITHUB_OUTPUT
+
+  smoke_test:
+    needs: get_tags
+    name: Smoke Test Container
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJson(needs.get_tags.outputs.tags) }}
+    steps:
+      - name: Sanitize tag for container name
+        id: sanitize
+        run: |
+          # Sanitize the tag to be a valid container name
+          sanitized_tag=$(echo "${{ matrix.tag }}" | sed 's/[^a-zA-Z0-9]/-/g')
+          echo "container_name=system-monitor-${sanitized_tag}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+
+      - name: Run container and perform smoke test
+        run: |
+          docker run -d --name ${{ steps.sanitize.outputs.container_name }} ghcr.io/${{ github.repository }}:${{ matrix.tag }}
+          sleep 5
+          if [ "$(docker ps -q -f name=${{ steps.sanitize.outputs.container_name }})" = "" ]; then
+            echo "Container failed to start"
+            docker logs ${{ steps.sanitize.outputs.container_name }}
+            exit 1
+          fi
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop ${{ steps.sanitize.outputs.container_name }} || true
+          docker rm ${{ steps.sanitize.outputs.container_name }} || true
