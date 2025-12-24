@@ -16,10 +16,9 @@ jobs:
           REPO_FULL_NAME: ${{ github.repository }}
         run: |
           YESTERDAY=$(date -d '24 hours ago' -u +'%Y-%m-%dT%H:%M:%SZ')
-          REPO_FULL_NAME_LOWER=$(echo "$REPO_FULL_NAME" | tr '[:upper:]' '[:lower:]')
 
-          echo "Fetching packages for repository $REPO_FULL_NAME_LOWER..."
-          PACKAGES=$(gh api "/repos/$REPO_FULL_NAME_LOWER/packages" --paginate -q '.[] | {name, type: .package_type}')
+          echo "Fetching packages for repository $REPO_FULL_NAME..."
+          PACKAGES=$(gh api "/user/packages" --paginate -q '.[] | select(.repository.full_name == "'"$REPO_FULL_NAME"'") | {name, type: .package_type}')
 
           if [ -z "$PACKAGES" ]; then
             echo "No packages found for repository."
@@ -40,7 +39,7 @@ jobs:
 
             echo "--- Processing package: $PACKAGE_NAME (Type: $PACKAGE_TYPE) ---"
 
-            VERSIONS_JSON=$(gh api "/repos/$REPO_FULL_NAME_LOWER/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions" --paginate)
+            VERSIONS_JSON=$(gh api "/user/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions" --paginate)
 
             if [ -z "$VERSIONS_JSON" ]; then
               echo "No versions found for $PACKAGE_NAME."
@@ -68,7 +67,7 @@ jobs:
 
             echo "$OLD_VERSION_IDS" | while read -r ID; do
               echo "Deleting version ID: $ID"
-              gh api --method DELETE "/repos/$REPO_FULL_NAME_LOWER/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions/$ID" --silent || echo "Failed to delete version ID $ID, it may have already been deleted."
+              gh api --method DELETE "/user/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions/$ID" --silent || echo "Failed to delete version ID $ID, it may have already been deleted."
             done
 
             echo "--- Finished processing package: $PACKAGE_NAME ---"
