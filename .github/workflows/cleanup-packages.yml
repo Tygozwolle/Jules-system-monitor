@@ -32,7 +32,7 @@ jobs:
             echo "PACKAGE_NAME: $PACKAGE_NAME"
             echo "PACKAGE_TYPE: $PACKAGE_TYPE"
 
-            if [ -z "$PACKAGE_NAME" ] || [ -z "$PACKAGE_TYPE" ]; then
+            if [ -z "$PACKAGE_NAME" ] || [ "$PACKAGE_NAME" == "null" ] || [ -z "$PACKAGE_TYPE" ] || [ "$PACKAGE_TYPE" == "null" ]; then
               echo "Skipping package due to missing name or type."
               continue
             fi
