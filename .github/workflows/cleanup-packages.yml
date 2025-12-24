@@ -18,7 +18,10 @@ jobs:
           YESTERDAY=$(date -d '24 hours ago' -u +'%Y-%m-%dT%H:%M:%SZ')
 
           echo "Fetching packages for repository $REPO_FULL_NAME..."
-          PACKAGES=$(gh api "repos/$REPO_FULL_NAME/packages" --paginate -q '.[] | {name, type: .package_type}')
+          PACKAGES=$(gh api "/user/packages" --paginate -q '.[] | select(.repository.full_name == "'"$REPO_FULL_NAME"'" and .package_type != null and .name != null) | {name, type: .package_type}')
+
+          echo "Full packages response:"
+          echo "$PACKAGES"
 
           if [ -z "$PACKAGES" ]; then
             echo "No packages found for repository."
@@ -29,9 +32,17 @@ jobs:
             PACKAGE_NAME=$(echo "$package" | jq -r '.name')
             PACKAGE_TYPE=$(echo "$package" | jq -r '.type')
 
+            echo "PACKAGE_NAME: $PACKAGE_NAME"
+            echo "PACKAGE_TYPE: $PACKAGE_TYPE"
+
+            if [ -z "$PACKAGE_NAME" ] || [ "$PACKAGE_NAME" == "null" ] || [ -z "$PACKAGE_TYPE" ] || [ "$PACKAGE_TYPE" == "null" ]; then
+              echo "Skipping package due to missing name or type."
+              continue
+            fi
+
             echo "--- Processing package: $PACKAGE_NAME (Type: $PACKAGE_TYPE) ---"
 
-            VERSIONS_JSON=$(gh api "repos/$REPO_FULL_NAME/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions" --paginate)
+            VERSIONS_JSON=$(gh api "/user/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions" --paginate)
 
             if [ -z "$VERSIONS_JSON" ]; then
               echo "No versions found for $PACKAGE_NAME."
@@ -59,7 +70,7 @@ jobs:
 
             echo "$OLD_VERSION_IDS" | while read -r ID; do
               echo "Deleting version ID: $ID"
-              gh api --method DELETE "/repos/$REPO_FULL_NAME/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions/$ID" --silent || echo "Failed to delete version ID $ID, it may have already been deleted."
+              gh api --method DELETE "/user/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions/$ID" --silent || echo "Failed to delete version ID $ID, it may have already been deleted."
             done
 
             echo "--- Finished processing package: $PACKAGE_NAME ---"
