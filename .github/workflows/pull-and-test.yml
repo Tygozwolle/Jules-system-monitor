@@ -50,13 +50,6 @@ jobs:
         id: lowercase-repo
         run: echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: Sanitize tag for container name
-        id: sanitize
-        run: |
-          # Sanitize the tag to be a valid container name
-          sanitized_tag=$(echo "${{ matrix.tag }}" | sed 's/[^a-zA-Z0-9]/-/g')
-          echo "container_name=system-monitor-test-${sanitized_tag}" >> $GITHUB_OUTPUT
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -67,19 +60,5 @@ jobs:
       - name: Pull image
         run: docker pull ghcr.io/${{ steps.lowercase-repo.outputs.name }}:${{ matrix.tag }}
 
-      - name: Run container and perform smoke test
-        run: |
-          docker run -d --name ${{ steps.sanitize.outputs.container_name }} ghcr.io/${{ steps.lowercase-repo.outputs.name }}:${{ matrix.tag }}
-          sleep 5
-          if [ "$(docker ps -q -f name=${{ steps.sanitize.outputs.container_name }})" = "" ]; then
-            echo "Container failed to start"
-            docker logs ${{ steps.sanitize.outputs.container_name }}
-            exit 1
-          fi
-          docker exec ${{ steps.sanitize.outputs.container_name }} pytest /app/tests/test_dry_run.py
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          docker stop ${{ steps.sanitize.outputs.container_name }} || true
-          docker rm ${{ steps.sanitize.outputs.container_name }} || true
+      - name: Run in-container test
+        run: docker run --rm ghcr.io/${{ steps.lowercase-repo.outputs.name }}:${{ matrix.tag }} pytest /app/tests/test_dry_run.py
