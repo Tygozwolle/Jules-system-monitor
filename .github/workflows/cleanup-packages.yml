@@ -21,7 +21,7 @@ jobs:
           YESTERDAY=$(date -d '24 hours ago' -u +'%Y-%m-%dT%H:%M:%SZ')
 
           echo "Fetching packages for repository $REPO_NAME..."
-          PACKAGES=$(gh api "/users/$REPO_OWNER/packages" --paginate -q '.[] | select(.repository.full_name == "'"$REPO_NAME"'") | {name, type: .package_type}')
+          PACKAGES=$(gh api "/users/$REPO_OWNER/packages?package_type=container" --paginate -q '.[] | select(.repository.full_name == "'"$REPO_NAME"'") | {name, type: .package_type}')
 
           if [ -z "$PACKAGES" ]; then
             echo "No packages found for repository."
