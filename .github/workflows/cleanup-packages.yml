@@ -32,6 +32,14 @@ jobs:
             PACKAGE_NAME=$(echo "$package" | jq -r '.name')
             PACKAGE_TYPE=$(echo "$package" | jq -r '.type')
 
+            echo "PACKAGE_NAME: $PACKAGE_NAME"
+            echo "PACKAGE_TYPE: $PACKAGE_TYPE"
+
+            if [ -z "$PACKAGE_NAME" ] || [ -z "$PACKAGE_TYPE" ]; then
+              echo "Skipping package due to missing name or type."
+              continue
+            fi
+
             echo "--- Processing package: $PACKAGE_NAME (Type: $PACKAGE_TYPE) ---"
 
             VERSIONS_JSON=$(gh api "/users/$REPO_OWNER/packages/$PACKAGE_TYPE/$PACKAGE_NAME/versions" --paginate)
