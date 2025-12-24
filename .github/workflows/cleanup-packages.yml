@@ -18,7 +18,7 @@ jobs:
           YESTERDAY=$(date -d '24 hours ago' -u +'%Y-%m-%dT%H:%M:%SZ')
 
           echo "Fetching packages for repository $REPO_FULL_NAME..."
-          PACKAGES=$(gh api "/user/packages" --paginate -q '.[] | select(.repository.full_name == "'"$REPO_FULL_NAME"'" and .package_type != null and .name != null) | {name, type: .package_type}')
+          PACKAGES=$(gh api "/user/packages/container/" --paginate -q '.[] | select(.repository.full_name == "'"$REPO_FULL_NAME"'" and .package_type != null and .name != null) | {name, type: .package_type}')
 
           echo "Full packages response:"
           echo "$PACKAGES"
