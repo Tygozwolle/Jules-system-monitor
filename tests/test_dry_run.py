@@ -158,6 +158,14 @@ class TestSystemMonitor(unittest.TestCase):
 
 
 class TestMQTTClient(unittest.TestCase):
+    def test_tls_configuration(self):
+        # Test with TLS enabled
+        client = MQTTClient("localhost", 8883, None, None, "Test Device",
+                            use_tls=True, ca_certs="/path/to/ca.crt", tls_insecure=True)
+
+        client.client.tls_set.assert_called_with(ca_certs="/path/to/ca.crt", certfile=None, keyfile=None)
+        client.client.tls_insecure_set.assert_called_with(True)
+
     def test_discovery_payload(self):
         client = MQTTClient("localhost", 1883, None, None, "Test Device")
         client.client.publish = MagicMock()
