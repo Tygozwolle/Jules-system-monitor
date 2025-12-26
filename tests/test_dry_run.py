@@ -178,5 +178,28 @@ class TestMQTTClient(unittest.TestCase):
         
         self.assertTrue(any("homeassistant/sensor/test_device/cpu_usage_percent/config" in t for t in topics))
 
+    def test_tls_configuration(self):
+        # Test with TLS enabled
+        client = MQTTClient(
+            "localhost", 8883, "user", "pass", "Test Device",
+            use_tls=True, ca_certs="/path/to/ca", tls_insecure=True
+        )
+
+        # Verify tls_set called
+        client.client.tls_set.assert_called_with(
+            ca_certs="/path/to/ca", certfile=None, keyfile=None
+        )
+        # Verify tls_insecure_set called
+        client.client.tls_insecure_set.assert_called_with(True)
+
+    def test_no_tls_configuration(self):
+        # Test with TLS disabled (default)
+        client = MQTTClient(
+            "localhost", 1883, "user", "pass", "Test Device"
+        )
+
+        # Verify tls_set NOT called
+        client.client.tls_set.assert_not_called()
+
 if __name__ == '__main__':
     unittest.main()
