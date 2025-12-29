@@ -24,12 +24,23 @@ def main():
 
     device_name = os.environ.get('DEVICE_NAME', socket.gethostname())
 
+    # TLS Configuration
+    tls_config = {
+        'use_tls': os.environ.get('MQTT_USE_TLS', 'false').lower() == 'true',
+        'ca_certs': os.environ.get('MQTT_TLS_CA_CERTS'),
+        'certfile': os.environ.get('MQTT_TLS_CERTFILE'),
+        'keyfile': os.environ.get('MQTT_TLS_KEYFILE'),
+        'insecure': os.environ.get('MQTT_TLS_INSECURE', 'false').lower() == 'true'
+    }
+
     print(f"Starting System Monitor for device: {device_name}")
     print(f"Connecting to MQTT Broker: {broker}:{port}")
+    if tls_config['use_tls']:
+        print("Using TLS for MQTT connection")
 
     # Initialize Monitor and MQTT Client
     monitor = SystemMonitor()
-    client = MQTTClient(broker, port, username, password, device_name)
+    client = MQTTClient(broker, port, username, password, device_name, tls_config)
 
     # Allow some time for connection
     time.sleep(2)
