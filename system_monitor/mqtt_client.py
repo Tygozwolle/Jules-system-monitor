@@ -2,8 +2,18 @@ import json
 import paho.mqtt.client as mqtt
 
 class MQTTClient:
-    def __init__(self, broker, port, username, password, device_name):
+    def __init__(self, broker, port, username, password, device_name, tls_config=None):
         self.client = mqtt.Client()
+
+        if tls_config:
+            self.client.tls_set(
+                ca_certs=tls_config.get('ca_certs'),
+                certfile=tls_config.get('certfile'),
+                keyfile=tls_config.get('keyfile')
+            )
+            if tls_config.get('insecure', False):
+                self.client.tls_insecure_set(True)
+
         if username and password:
             self.client.username_pw_set(username, password)
         self.client.connect(broker, port)
