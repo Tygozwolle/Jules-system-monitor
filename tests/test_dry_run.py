@@ -66,15 +66,13 @@ class TestSystemMonitor(unittest.TestCase):
 
         # Mock file reads. 
         # Logic: 
-        # 1. Intel check: read vendor -> "0x1002" (Not Intel)
-        # 2. AMD check: read vendor -> "0x1002" (Is AMD)
-        # 3. AMD Usage: read "50"
-        # 4. AMD Temp: read "35000" (35C)
-        # 5. AMD Power: read "50000000" (50W) from power1_average
+        # 1. Vendor check: read vendor -> "0x1002" (AMD)
+        # 2. AMD Usage: read "50"
+        # 3. AMD Temp: read "35000" (35C)
+        # 4. AMD Power: read "50000000" (50W) from power1_average
         
         mock_open_file.side_effect = [
-            unittest.mock.mock_open(read_data="0x1002").return_value, # Intel check
-            unittest.mock.mock_open(read_data="0x1002").return_value, # AMD check
+            unittest.mock.mock_open(read_data="0x1002").return_value, # Vendor check
             unittest.mock.mock_open(read_data="50").return_value,     # Usage
             unittest.mock.mock_open(read_data="35000").return_value,  # Temp
             unittest.mock.mock_open(read_data="50000000").return_value, # Power
