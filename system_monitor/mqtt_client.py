@@ -1,16 +1,28 @@
 import json
 import paho.mqtt.client as mqtt
 
+
 class MQTTClient:
-    def __init__(self, broker, port, username, password, device_name):
+    def __init__(self, broker, port, username, password,
+                 device_name, tls_config=None):
         self.client = mqtt.Client()
         if username and password:
             self.client.username_pw_set(username, password)
+
+        if tls_config:
+            self.client.tls_set(
+                ca_certs=tls_config.get('ca_certs'),
+                certfile=tls_config.get('certfile'),
+                keyfile=tls_config.get('keyfile')
+            )
+            if tls_config.get('insecure', False):
+                self.client.tls_insecure_set(True)
+
         self.client.connect(broker, port)
         self.client.loop_start()
         self.device_name = device_name
         self.discovery_prefix = "homeassistant"
-        
+
         # Sanitize device name for IDs
         self.device_id = device_name.lower().replace(" ", "_")
 
@@ -30,8 +42,8 @@ class MQTTClient:
             # Infer sensor type/unit based on key name
             unit_of_measurement = None
             device_class = None
-            state_class = "measurement" # Default to measurement
-            
+            state_class = "measurement"  # Default to measurement
+
             if "_percent" in key:
                 unit_of_measurement = "%"
                 # If usage, maybe not a specific device class, but fine
@@ -57,7 +69,7 @@ class MQTTClient:
 
             unique_id = f"{self.device_id}_{key}"
             config_topic = f"{self.discovery_prefix}/sensor/{self.device_id}/{key}/config"
-            
+
             payload = {
                 "name": f"{self.device_name} {key.replace('_', ' ').title()}",
                 "state_topic": f"{self.discovery_prefix}/sensor/{self.device_id}/state",
@@ -65,7 +77,7 @@ class MQTTClient:
                 "unique_id": unique_id,
                 "device": device_info
             }
-            
+
             if unit_of_measurement:
                 payload["unit_of_measurement"] = unit_of_measurement
             if device_class:
