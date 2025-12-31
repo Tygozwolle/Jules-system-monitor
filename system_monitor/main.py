@@ -4,6 +4,7 @@ import socket
 from monitor import SystemMonitor
 from mqtt_client import MQTTClient
 
+
 def main():
     # Load Environment Variables
     broker = os.environ.get('MQTT_BROKER', 'localhost')
@@ -12,10 +13,21 @@ def main():
     except ValueError:
         print("Invalid MQTT_PORT, defaulting to 1883")
         port = 1883
-    
+
     username = os.environ.get('MQTT_USER')
     password = os.environ.get('MQTT_PASSWORD')
-    
+
+    # TLS Configuration
+    tls_config = None
+    use_tls = os.environ.get('MQTT_USE_TLS', 'false').lower() == 'true'
+    if use_tls:
+        tls_config = {
+            'ca_certs': os.environ.get('MQTT_TLS_CA_CERTS'),
+            'certfile': os.environ.get('MQTT_TLS_CERTFILE'),
+            'keyfile': os.environ.get('MQTT_TLS_KEYFILE'),
+            'insecure': os.environ.get('MQTT_TLS_INSECURE', 'false').lower() == 'true'
+        }
+
     try:
         interval = int(os.environ.get('UPDATE_INTERVAL', 10))
     except ValueError:
@@ -29,7 +41,13 @@ def main():
 
     # Initialize Monitor and MQTT Client
     monitor = SystemMonitor()
-    client = MQTTClient(broker, port, username, password, device_name)
+    client = MQTTClient(
+        broker,
+        port,
+        username,
+        password,
+        device_name,
+        tls_config)
 
     # Allow some time for connection
     time.sleep(2)
@@ -37,11 +55,11 @@ def main():
     # Initial Fetch to register sensors
     print("Performing initial discovery...")
     # First call initializes state but might miss rates (CPU power)
-    monitor.get_stats() 
-    time.sleep(1) # Sleep briefly to allow rate calculation on next call
+    monitor.get_stats()
+    time.sleep(1)  # Sleep briefly to allow rate calculation on next call
     initial_stats = monitor.get_stats()
     client.publish_discovery(initial_stats)
-    
+
     # Main Loop
     print(f"Starting main loop with interval: {interval}s")
     while True:
@@ -50,8 +68,9 @@ def main():
             client.publish_update(stats)
         except Exception as e:
             print(f"Error in main loop: {e}")
-        
+
         time.sleep(interval)
+
 
 if __name__ == "__main__":
     main()
