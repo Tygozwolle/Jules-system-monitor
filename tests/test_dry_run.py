@@ -73,8 +73,7 @@ class TestSystemMonitor(unittest.TestCase):
         # 5. AMD Power: read "50000000" (50W) from power1_average
         
         mock_open_file.side_effect = [
-            unittest.mock.mock_open(read_data="0x1002").return_value, # Intel check
-            unittest.mock.mock_open(read_data="0x1002").return_value, # AMD check
+            unittest.mock.mock_open(read_data="0x1002").return_value, # Single vendor check
             unittest.mock.mock_open(read_data="50").return_value,     # Usage
             unittest.mock.mock_open(read_data="35000").return_value,  # Temp
             unittest.mock.mock_open(read_data="50000000").return_value, # Power
