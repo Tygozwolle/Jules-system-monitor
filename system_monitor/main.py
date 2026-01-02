@@ -15,6 +15,13 @@ def main():
     
     username = os.environ.get('MQTT_USER')
     password = os.environ.get('MQTT_PASSWORD')
+
+    # TLS Configuration
+    use_tls = os.environ.get('MQTT_USE_TLS', 'false').lower() == 'true'
+    ca_certs = os.environ.get('MQTT_TLS_CA_CERTS')
+    certfile = os.environ.get('MQTT_TLS_CERTFILE')
+    keyfile = os.environ.get('MQTT_TLS_KEYFILE')
+    tls_insecure = os.environ.get('MQTT_TLS_INSECURE', 'false').lower() == 'true'
     
     try:
         interval = int(os.environ.get('UPDATE_INTERVAL', 10))
@@ -26,10 +33,15 @@ def main():
 
     print(f"Starting System Monitor for device: {device_name}")
     print(f"Connecting to MQTT Broker: {broker}:{port}")
+    if use_tls:
+        print(f"Using TLS (insecure: {tls_insecure})")
 
     # Initialize Monitor and MQTT Client
     monitor = SystemMonitor()
-    client = MQTTClient(broker, port, username, password, device_name)
+    client = MQTTClient(
+        broker, port, username, password, device_name,
+        use_tls=use_tls, ca_certs=ca_certs, certfile=certfile, keyfile=keyfile, tls_insecure=tls_insecure
+    )
 
     # Allow some time for connection
     time.sleep(2)

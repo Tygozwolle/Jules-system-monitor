@@ -53,6 +53,11 @@ docker run -d \
 | `MQTT_PORT` | `1883` | Port of the MQTT Broker. |
 | `MQTT_USER` | `None` | MQTT Username (optional). |
 | `MQTT_PASSWORD` | `None` | MQTT Password (optional). |
+| `MQTT_USE_TLS` | `false` | Set to `true` to enable TLS encryption. |
+| `MQTT_TLS_CA_CERTS`| `None` | Path to the CA certificate file. |
+| `MQTT_TLS_CERTFILE`| `None` | Path to the client certificate file. |
+| `MQTT_TLS_KEYFILE` | `None` | Path to the client private key file. |
+| `MQTT_TLS_INSECURE`| `false` | Set to `true` to skip certificate verification. |
 | `UPDATE_INTERVAL`| `10` | Time in seconds between updates. |
 | `DEVICE_NAME` | Hostname | Name of the device as it will appear in Home Assistant. |
 
