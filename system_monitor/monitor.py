@@ -1,8 +1,8 @@
 import platform
-import psutil
 import os
 import glob
 import time
+import psutil
 
 class SystemMonitor:
     def __init__(self):
@@ -92,9 +92,9 @@ class SystemMonitor:
                     energy_file = os.path.join(pkg, 'energy_uj')
                     if os.path.exists(name_file) and os.path.exists(energy_file):
                         try:
-                            with open(name_file, 'r') as f:
+                            with open(name_file, 'r', encoding='utf-8') as f:
                                 name = f.read().strip()
-                            with open(energy_file, 'r') as f:
+                            with open(energy_file, 'r', encoding='utf-8') as f:
                                 energy_uj = int(f.read().strip())
                             
                             # Calculate Watts if we have previous data
@@ -177,66 +177,59 @@ class SystemMonitor:
             except Exception:
                 pass
 
-        # Intel (sysfs)
-        # Look for /sys/class/drm/card*/gt_act_freq_mhz
-        for path in glob.glob('/sys/class/drm/card*'):
-            try:
-                # Basic check if it is Intel
-                vendor_path = os.path.join(path, 'device/vendor')
-                if os.path.exists(vendor_path):
-                    with open(vendor_path, 'r') as f:
-                        vendor_id = f.read().strip()
-                    if vendor_id == '0x8086': # Intel
-                        card_name = os.path.basename(path)
-                        # Frequency
-                        freq_path = os.path.join(path, 'gt_act_freq_mhz')
-                        if os.path.exists(freq_path):
-                            with open(freq_path, 'r') as f:
-                                data[f'gpu_intel_{card_name}_freq_mhz'] = int(f.read().strip())
-                        # Attempt to find power/energy if available (often in rapl but specific)
-            except Exception:
-                pass
-
-        # AMD (sysfs)
-        # Look for /sys/class/drm/card*/device/gpu_busy_percent
+        # Intel and AMD (sysfs)
+        # Optimized: Single loop to reduce FS calls
         for path in glob.glob('/sys/class/drm/card*'):
             try:
                 vendor_path = os.path.join(path, 'device/vendor')
-                if os.path.exists(vendor_path):
-                    with open(vendor_path, 'r') as f:
-                        vendor_id = f.read().strip()
-                    if vendor_id == '0x1002': # AMD
-                        card_name = os.path.basename(path)
-                        # Usage
-                        busy_path = os.path.join(path, 'device/gpu_busy_percent')
-                        if os.path.exists(busy_path):
-                            with open(busy_path, 'r') as f:
-                                data[f'gpu_amd_{card_name}_usage_percent'] = int(f.read().strip())
-                        # Temp and Power (via hwmon)
-                        hwmon_dir = os.path.join(path, 'device/hwmon')
-                        if os.path.exists(hwmon_dir):
-                            for hwmon in glob.glob(os.path.join(hwmon_dir, 'hwmon*')):
-                                # Temp
-                                temp_input = os.path.join(hwmon, 'temp1_input')
-                                if os.path.exists(temp_input):
-                                    with open(temp_input, 'r') as f:
-                                        # Millidegree Celsius
-                                        data[f'gpu_amd_{card_name}_temp_c'] = int(f.read().strip()) / 1000.0
-                                
-                                # Power
-                                # Try power1_average first, then power1_input
-                                power_found = False
-                                for p_file in ['power1_average', 'power1_input']:
-                                    p_path = os.path.join(hwmon, p_file)
-                                    if os.path.exists(p_path):
-                                        with open(p_path, 'r') as f:
-                                            # Microwatts
-                                            val = int(f.read().strip())
-                                            data[f'gpu_amd_{card_name}_power_watts'] = val / 1_000_000.0
-                                            power_found = True
-                                            break
+                if not os.path.exists(vendor_path):
+                    continue
 
+                with open(vendor_path, 'r', encoding='utf-8') as f:
+                    vendor_id = f.read().strip()
+
+                if vendor_id == '0x8086': # Intel
+                    self._get_intel_gpu_stats(path, data)
+                elif vendor_id == '0x1002': # AMD
+                    self._get_amd_gpu_stats(path, data)
             except Exception:
                 pass
 
         return data
+
+    def _get_intel_gpu_stats(self, path, data):
+        card_name = os.path.basename(path)
+        # Frequency
+        freq_path = os.path.join(path, 'gt_act_freq_mhz')
+        if os.path.exists(freq_path):
+            with open(freq_path, 'r', encoding='utf-8') as f:
+                data[f'gpu_intel_{card_name}_freq_mhz'] = int(f.read().strip())
+
+    def _get_amd_gpu_stats(self, path, data):
+        card_name = os.path.basename(path)
+        # Usage
+        busy_path = os.path.join(path, 'device/gpu_busy_percent')
+        if os.path.exists(busy_path):
+            with open(busy_path, 'r', encoding='utf-8') as f:
+                data[f'gpu_amd_{card_name}_usage_percent'] = int(f.read().strip())
+        # Temp and Power (via hwmon)
+        hwmon_dir = os.path.join(path, 'device/hwmon')
+        if os.path.exists(hwmon_dir):
+            for hwmon in glob.glob(os.path.join(hwmon_dir, 'hwmon*')):
+                # Temp
+                temp_input = os.path.join(hwmon, 'temp1_input')
+                if os.path.exists(temp_input):
+                    with open(temp_input, 'r', encoding='utf-8') as f:
+                        # Millidegree Celsius
+                        data[f'gpu_amd_{card_name}_temp_c'] = int(f.read().strip()) / 1000.0
+
+                # Power
+                # Try power1_average first, then power1_input
+                for p_file in ['power1_average', 'power1_input']:
+                    p_path = os.path.join(hwmon, p_file)
+                    if os.path.exists(p_path):
+                        with open(p_path, 'r', encoding='utf-8') as f:
+                            # Microwatts
+                            val = int(f.read().strip())
+                            data[f'gpu_amd_{card_name}_power_watts'] = val / 1_000_000.0
+                            break
