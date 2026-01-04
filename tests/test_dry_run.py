@@ -66,15 +66,13 @@ class TestSystemMonitor(unittest.TestCase):
 
         # Mock file reads. 
         # Logic: 
-        # 1. Intel check: read vendor -> "0x1002" (Not Intel)
-        # 2. AMD check: read vendor -> "0x1002" (Is AMD)
-        # 3. AMD Usage: read "50"
-        # 4. AMD Temp: read "35000" (35C)
-        # 5. AMD Power: read "50000000" (50W) from power1_average
+        # 1. Vendor check: read vendor -> "0x1002" (Is AMD)
+        # 2. AMD Usage: read "50"
+        # 3. AMD Temp: read "35000" (35C)
+        # 4. AMD Power: read "50000000" (50W) from power1_average
         
         mock_open_file.side_effect = [
-            unittest.mock.mock_open(read_data="0x1002").return_value, # Intel check
-            unittest.mock.mock_open(read_data="0x1002").return_value, # AMD check
+            unittest.mock.mock_open(read_data="0x1002").return_value, # Vendor check (AMD)
             unittest.mock.mock_open(read_data="50").return_value,     # Usage
             unittest.mock.mock_open(read_data="35000").return_value,  # Temp
             unittest.mock.mock_open(read_data="50000000").return_value, # Power
@@ -100,35 +98,10 @@ class TestSystemMonitor(unittest.TestCase):
         
         # Mock rapl paths
         mock_exists.return_value = True
-        mock_glob.side_effect = [
-            ['/sys/class/drm/card0'], # drm card glob (first call)
-            ['/sys/class/powercap/intel-rapl/intel-rapl:0'], # rapl packages (first call)
-            ['/sys/class/drm/card0'], # drm card glob (second call)
-            ['/sys/class/powercap/intel-rapl/intel-rapl:0'], # rapl packages (second call)
-            [], [] # extra calls
-        ]
+        # Simplified glob mock for this specific test to avoid complexity with GPU loop
+        mock_glob.side_effect = lambda x: ['/sys/class/powercap/intel-rapl/intel-rapl:0'] if 'intel-rapl' in x else []
         mock_join.side_effect = lambda *args: "/".join(args)
 
-        # Monitor Logic calls CPU stats then GPU stats.
-        # We want to test CPU stats.
-        # CPU Stats Logic:
-        # Glob rapl packages. For each: read name, read energy_uj.
-        
-        # First call:
-        # Read name: "package-0"
-        # Read energy: "1000000" (1J)
-        
-        # Second call:
-        # Read name: "package-0"
-        # Read energy: "2000000" (2J) -> Delta 1J in X seconds
-        
-        # We need to interleave these returns with the GPU logic calls or ensure GPU logic doesn't crash/consume too many side effects.
-        # To simplify, let's assume GPU returns nothing or fails gracefully.
-        # But we need to handle the vendor/file reads if GPU logic runs.
-        # Easier: Mock platform such that GPU logic is skipped or make glob return empty for drm.
-        
-        # Re-setup mocks strictly for this test to avoid complexity
-        mock_glob.side_effect = lambda x: ['/sys/class/powercap/intel-rapl/intel-rapl:0'] if 'intel-rapl' in x else []
         
         monitor = SystemMonitor()
         
