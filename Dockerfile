@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.14-slim
 
 # Install system dependencies
 # gcc and python3-dev are often required for psutil compilation if no wheel is available
