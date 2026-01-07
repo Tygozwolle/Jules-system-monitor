@@ -57,37 +57,41 @@ class TestSystemMonitor(unittest.TestCase):
     def test_amd_gpu_detection(self, mock_platform, mock_open_file, mock_join, mock_exists, mock_glob):
         mock_platform.system.return_value = 'Linux'
         mock_platform.machine.return_value = 'x86_64'
-        
-        # Mock glob to find one card
-        mock_glob.side_effect = lambda x: ['/sys/class/drm/card0'] if 'card' in x else []
+
+        # Mock glob to find one card and one hwmon
+        def glob_side_effect(path):
+            if 'card' in path:
+                return ['/sys/class/drm/card0']
+            if 'hwmon' in path:
+                return ['/sys/class/drm/card0/device/hwmon/hwmon0']
+            return []
+        mock_glob.side_effect = glob_side_effect
 
         mock_exists.return_value = True
         mock_join.side_effect = lambda *args: "/".join(args)
 
-        # Mock file reads. 
-        # Logic: 
-        # 1. Intel check: read vendor -> "0x1002" (Not Intel)
-        # 2. AMD check: read vendor -> "0x1002" (Is AMD)
-        # 3. AMD Usage: read "50"
-        # 4. AMD Temp: read "35000" (35C)
-        # 5. AMD Power: read "50000000" (50W) from power1_average
-        
+        # Mock file reads for the new modular design
+        # The new logic scans all cards, checks vendor, then calls the specific method.
+        # So, we read the vendor ID once, then the stats.
         mock_open_file.side_effect = [
-            unittest.mock.mock_open(read_data="0x1002").return_value, # Intel check
-            unittest.mock.mock_open(read_data="0x1002").return_value, # AMD check
+            unittest.mock.mock_open(
+                read_data="0x1002").return_value,  # Vendor ID
             unittest.mock.mock_open(read_data="50").return_value,     # Usage
-            unittest.mock.mock_open(read_data="35000").return_value,  # Temp
-            unittest.mock.mock_open(read_data="50000000").return_value, # Power
-            unittest.mock.mock_open(read_data="0x1002").return_value, # Extra for safety
+            unittest.mock.mock_open(
+                read_data="35000").return_value,  # Temp
+            unittest.mock.mock_open(
+                read_data="50000000").return_value  # Power
         ]
 
         monitor = SystemMonitor()
         stats = monitor.get_stats()
-        
+
         self.assertIn('gpu_amd_card0_usage_percent', stats)
         self.assertEqual(stats['gpu_amd_card0_usage_percent'], 50)
         self.assertIn('gpu_amd_card0_power_watts', stats)
         self.assertEqual(stats['gpu_amd_card0_power_watts'], 50.0)
+        self.assertIn('gpu_amd_card0_temp_c', stats)
+        self.assertEqual(stats['gpu_amd_card0_temp_c'], 35.0)
 
     @patch('monitor.glob.glob')
     @patch('monitor.os.path.exists')
